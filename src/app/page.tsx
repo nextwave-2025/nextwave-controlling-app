@@ -6,6 +6,7 @@ import { BreakEvenCard } from "@/components/dashboard/break-even-card";
 import { RevenueCostChart } from "@/components/dashboard/revenue-cost-chart";
 import { FixedCostsTable } from "@/components/dashboard/fixed-costs-table";
 import { FixedCostForm } from "@/components/dashboard/fixed-cost-form";
+import { RevenueSyncButton } from "@/components/dashboard/revenue-sync-button";
 
 export const dynamic = "force-dynamic";
 
@@ -77,9 +78,7 @@ export default async function HomePage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-xl bg-brand-orange px-4 py-3 font-semibold text-white">
-              Umsatz Sync
-            </button>
+            <RevenueSyncButton />
 
             <button className="rounded-xl bg-gray-900 px-4 py-3 font-semibold text-white">
               Kosten Sync
