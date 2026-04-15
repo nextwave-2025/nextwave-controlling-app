@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model FixedCost {
+  id            String   @id @default(cuid())
+  name          String
+  amountMonthly Float
+  category      String?
+  note          String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model RevenueSync {
   id                       String   @id @default(cuid())
   syncDate                 DateTime @default(now())
@@ -29,15 +40,4 @@ model SyncedInvoice {
   grossAmount   Float    @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-}
-
-model FixedCost {
-  id         String   @id @default(cuid())
-  title      String
-  amount     Float
-  category   String?
-  note       String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
 }
