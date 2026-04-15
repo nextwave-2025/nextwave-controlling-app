@@ -12,20 +12,10 @@ export const dynamic = "force-dynamic";
 async function getMonthlyChartData() {
   const revenueDocs = await db.syncedInvoice.findMany({
     orderBy: {
-      documentDate: "asc",
+      invoiceDate: "asc",
     },
     select: {
-      documentDate: true,
-      netAmount: true,
-    },
-  });
-
-  const purchaseDocs = await db.purchaseDocument.findMany({
-    orderBy: {
-      documentDate: "asc",
-    },
-    select: {
-      documentDate: true,
+      invoiceDate: true,
       netAmount: true,
     },
   });
@@ -33,20 +23,14 @@ async function getMonthlyChartData() {
   const map = new Map<string, { label: string; revenue: number; costs: number }>();
 
   for (const doc of revenueDocs) {
-    const label = `${doc.documentDate.getFullYear()}-${String(
-      doc.documentDate.getMonth() + 1
+    const label = `${doc.invoiceDate.getFullYear()}-${String(
+      doc.invoiceDate.getMonth() + 1
     ).padStart(2, "0")}`;
-    const existing = map.get(label) || { label, revenue: 0, costs: 0 };
-    existing.revenue += toNumber(doc.netAmount);
-    map.set(label, existing);
-  }
 
-  for (const doc of purchaseDocs) {
-    const label = `${doc.documentDate.getFullYear()}-${String(
-      doc.documentDate.getMonth() + 1
-    ).padStart(2, "0")}`;
     const existing = map.get(label) || { label, revenue: 0, costs: 0 };
-    existing.costs += toNumber(doc.netAmount);
+
+    existing.revenue += toNumber(doc.netAmount);
+
     map.set(label, existing);
   }
 
@@ -56,19 +40,21 @@ async function getMonthlyChartData() {
 export default async function HomePage() {
   const [summary, fixedCosts, chartData] = await Promise.all([
     getDashboardSummary(),
+
     db.fixedCost.findMany({
       orderBy: {
         createdAt: "desc",
       },
       select: {
         id: true,
-        name: true,
+        title: true,
         category: true,
-        amountMonthly: true,
-        active: true,
+        amount: true,
+        isActive: true,
         note: true,
       },
     }),
+
     getMonthlyChartData(),
   ]);
 
@@ -80,9 +66,11 @@ export default async function HomePage() {
             <div className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-orange">
               NEXTWAVE
             </div>
+
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
               Controlling Dashboard
             </h1>
+
             <p className="mt-2 max-w-3xl text-gray-600">
               Täglicher Blick auf Umsatz, Kosten, Gewinn, Neukunden und Break-even.
             </p>
@@ -92,6 +80,7 @@ export default async function HomePage() {
             <button className="rounded-xl bg-brand-orange px-4 py-3 font-semibold text-white">
               Umsatz Sync
             </button>
+
             <button className="rounded-xl bg-gray-900 px-4 py-3 font-semibold text-white">
               Kosten Sync
             </button>
@@ -100,18 +89,31 @@ export default async function HomePage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <KpiCard title="Umsatz heute" value={formatEuro(summary.todayRevenue)} />
+
           <KpiCard title="Umsatz Monat" value={formatEuro(summary.monthRevenue)} />
+
           <KpiCard title="Kosten Monat" value={formatEuro(summary.monthTotalCosts)} />
+
           <KpiCard
             title="Gewinn / Verlust Monat"
             value={formatEuro(summary.monthProfit)}
           />
-          <KpiCard title="Fixkosten Monat" value={formatEuro(summary.monthFixedCosts)} />
+
+          <KpiCard
+            title="Fixkosten Monat"
+            value={formatEuro(summary.monthFixedCosts)}
+          />
+
           <KpiCard
             title="Variable Kosten Monat"
             value={formatEuro(summary.monthVariableCosts)}
           />
-          <KpiCard title="Neukunden Monat" value={String(summary.monthNewCustomers)} />
+
+          <KpiCard
+            title="Neukunden Monat"
+            value={String(summary.monthNewCustomers)}
+          />
+
           <KpiCard
             title="Ø Umsatz pro Neukunde"
             value={formatEuro(summary.averageRevenuePerNewCustomer)}
@@ -127,7 +129,9 @@ export default async function HomePage() {
             <BreakEvenCard gap={summary.monthBreakEvenGap} />
 
             <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-              <div className="text-sm font-medium text-gray-500">Steuerübersicht</div>
+              <div className="text-sm font-medium text-gray-500">
+                Steuerübersicht
+              </div>
 
               <div className="mt-3 space-y-2 text-sm text-gray-700">
                 <div className="flex items-center justify-between">
@@ -151,10 +155,15 @@ export default async function HomePage() {
 
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           <FixedCostForm />
+
           <FixedCostsTable
             items={fixedCosts.map((item) => ({
-              ...item,
-              amountMonthly: Number(item.amountMonthly),
+              id: item.id,
+              name: item.title,
+              category: item.category,
+              note: item.note,
+              active: item.isActive,
+              amountMonthly: Number(item.amount),
             }))}
           />
         </div>
