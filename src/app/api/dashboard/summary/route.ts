@@ -1,12 +1,34 @@
 import { NextResponse } from "next/server";
-import { getDashboardSummary } from "@/lib/kpis";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const summary = await getDashboardSummary();
-    return NextResponse.json(summary);
+    const latest = await prisma.revenueSync.findFirst({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      summary: {
+        revenueTodayNet: latest?.revenueTodayNet ?? 0,
+        revenueMonthNet: latest?.revenueMonthNet ?? 0,
+        costsMonth: 0,
+        profitMonth: (latest?.revenueMonthNet ?? 0) - 0,
+        fixedCostsMonth: 0,
+        variableCostsMonth: 0,
+        newCustomersMonth: latest?.newCustomersMonth ?? 0,
+        avgRevenuePerNewCustomer: latest?.avgRevenuePerNewCustomer ?? 0,
+      },
+    });
   } catch (error) {
-    console.error("GET /api/dashboard/summary failed", error);
-    return NextResponse.json({ error: "Dashboard konnte nicht geladen werden." }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unbekannter Fehler",
+      },
+      { status: 500 }
+    );
   }
 }
