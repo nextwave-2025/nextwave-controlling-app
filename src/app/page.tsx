@@ -1,4 +1,67 @@
 import { db } from "@/lib/db";
+import { getDashboardSummary } from "@/lib/kpis";
+import { formatEuro, toNumber } from "@/lib/money";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { BreakEvenCard } from "@/components/dashboard/break-even-card";
+import { RevenueCostChart } from "@/components/dashboard/revenue-cost-chart";
+import { FixedCostsTable } from "@/components/fixed-costs/fixed-costs-table";
+import { FixedCostForm } from "@/components/fixed-costs/fixed-cost-form";
+
+async function getMonthlyChartData() {
+  const revenueDocs = await db.revenueDocument.findMany({
+    orderBy: {
+      documentDate: "asc",
+    },
+    select: {
+      documentDate: true,
+      netAmount: true,
+    },
+  });
+
+  const purchaseDocs = await db.purchaseDocument.findMany({
+    orderBy: {
+      documentDate: "asc",
+    },
+    select: {
+      documentDate: true,
+      netAmount: true,
+    },
+  });
+
+  const map = new Map<string, { label: string; revenue: number; costs: number }>();
+
+  for (const doc of revenueDocs) {
+    const label = `${doc.documentDate.getFullYear()}-${String(
+      doc.documentDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+    const existing = map.get(label) || { label, revenue: 0, costs: 0 };
+    existing.revenue += toNumber(doc.netAmount);
+    map.set(label, existing);
+  }
+
+  for (const doc of purchaseDocs) {
+    const label = `${doc.documentDate.getFullYear()}-${String(
+      doc.documentDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+    const existing = map.get(label) || { label, revenue: 0, costs: 0 };
+    existing.costs += toNumber(doc.netAmount);
+    map.set(label, existing);
+  }
+
+  return Array.from(map.values());
+}
+
+export default async function HomePage() {
+  const [summary, fixedCosts, chartData] = await Promise.all([
+    getDashboardSummary(),
+    db.fixedCost.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+        name: true,
+        category: true,
         amountMonthly: true,
         active: true,
         note: true,
@@ -37,9 +100,15 @@ import { db } from "@/lib/db";
           <KpiCard title="Umsatz heute" value={formatEuro(summary.todayRevenue)} />
           <KpiCard title="Umsatz Monat" value={formatEuro(summary.monthRevenue)} />
           <KpiCard title="Kosten Monat" value={formatEuro(summary.monthTotalCosts)} />
-          <KpiCard title="Gewinn / Verlust Monat" value={formatEuro(summary.monthProfit)} />
+          <KpiCard
+            title="Gewinn / Verlust Monat"
+            value={formatEuro(summary.monthProfit)}
+          />
           <KpiCard title="Fixkosten Monat" value={formatEuro(summary.monthFixedCosts)} />
-          <KpiCard title="Variable Kosten Monat" value={formatEuro(summary.monthVariableCosts)} />
+          <KpiCard
+            title="Variable Kosten Monat"
+            value={formatEuro(summary.monthVariableCosts)}
+          />
           <KpiCard title="Neukunden Monat" value={String(summary.monthNewCustomers)} />
           <KpiCard
             title="Ø Umsatz pro Neukunde"
@@ -51,20 +120,24 @@ import { db } from "@/lib/db";
           <div className="xl:col-span-2">
             <RevenueCostChart data={chartData} />
           </div>
+
           <div>
             <BreakEvenCard gap={summary.monthBreakEvenGap} />
 
             <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
               <div className="text-sm font-medium text-gray-500">Steuerübersicht</div>
+
               <div className="mt-3 space-y-2 text-sm text-gray-700">
                 <div className="flex items-center justify-between">
                   <span>Umsatzsteuer Monat</span>
                   <strong>{formatEuro(summary.monthOutputVat)}</strong>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <span>Vorsteuer Monat</span>
                   <strong>{formatEuro(summary.monthInputVat)}</strong>
                 </div>
+
                 <div className="flex items-center justify-between border-t border-gray-200 pt-2 text-base">
                   <span>Geschätzte Zahllast Quartal</span>
                   <strong>{formatEuro(summary.quarterVatPayable)}</strong>
