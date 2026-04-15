@@ -7,6 +7,8 @@ import { RevenueCostChart } from "@/components/dashboard/revenue-cost-chart";
 import { FixedCostsTable } from "@/components/dashboard/fixed-costs-table";
 import { FixedCostForm } from "@/components/dashboard/fixed-cost-form";
 
+export const dynamic = "force-dynamic";
+
 async function getMonthlyChartData() {
   const revenueDocs = await db.revenueDocument.findMany({
     orderBy: {
