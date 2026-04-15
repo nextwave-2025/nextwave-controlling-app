@@ -10,7 +10,7 @@ import { FixedCostForm } from "@/components/dashboard/fixed-cost-form";
 export const dynamic = "force-dynamic";
 
 async function getMonthlyChartData() {
-  const revenueDocs = await db.revenueDocument.findMany({
+  const revenueDocs = await db.syncedInvoice.findMany({
     orderBy: {
       documentDate: "asc",
     },
