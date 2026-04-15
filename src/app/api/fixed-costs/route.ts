@@ -10,10 +10,10 @@ export async function GET() {
     });
 
     return NextResponse.json(
-      items.map((item) => ({
-        ...item,
-        amountMonthly: Number(item.amountMonthly),
-      }))
+    items.map((item) => ({
+  ...item,
+  amount: Number(item.amount),
+}))
     );
   } catch (error) {
     console.error("GET /api/fixed-costs failed", error);
