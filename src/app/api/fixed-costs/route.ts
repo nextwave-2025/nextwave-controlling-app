@@ -38,14 +38,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "amountMonthly ist ungültig." }, { status: 400 });
     }
 
-    const item = await db.fixedCost.create({
-      data: {
-        name,
-        category: category || null,
-        note: note || null,
-        amountMonthly,
-      },
-    });
+   const item = await db.fixedCost.create({
+  data: {
+    title: name,
+    amount: Number(amountMonthly),
+    category: category || null,
+    note: note || null,
+    isActive: true,
+  },
+});
 
     return NextResponse.json(
       {
