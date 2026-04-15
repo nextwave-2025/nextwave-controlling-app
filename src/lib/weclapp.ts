@@ -8,11 +8,11 @@ type WeclappInvoice = {
   grossAmount?: number;
 };
 
-type WeclappResponse = {
+type WeclappListResponse = {
   result?: WeclappInvoice[];
 };
 
-function getWeclappBaseUrl() {
+function getBaseUrl() {
   const baseUrl = process.env.WECLAPP_BASE_URL;
   if (!baseUrl) {
     throw new Error("WECLAPP_BASE_URL fehlt");
@@ -20,7 +20,7 @@ function getWeclappBaseUrl() {
   return baseUrl.replace(/\/$/, "");
 }
 
-function getWeclappToken() {
+function getToken() {
   const token = process.env.WECLAPP_API_TOKEN;
   if (!token) {
     throw new Error("WECLAPP_API_TOKEN fehlt");
@@ -29,8 +29,8 @@ function getWeclappToken() {
 }
 
 export async function fetchWeclappInvoices(): Promise<WeclappInvoice[]> {
-  const baseUrl = getWeclappBaseUrl();
-  const token = getWeclappToken();
+  const baseUrl = getBaseUrl();
+  const token = getToken();
 
   const url = `${baseUrl}/webapp/api/v1/salesInvoice?page=1&pageSize=1000`;
 
@@ -48,6 +48,6 @@ export async function fetchWeclappInvoices(): Promise<WeclappInvoice[]> {
     throw new Error(`Weclapp Fehler ${res.status}: ${text}`);
   }
 
-  const data = (await res.json()) as WeclappResponse;
+  const data = (await res.json()) as WeclappListResponse;
   return data.result ?? [];
 }
