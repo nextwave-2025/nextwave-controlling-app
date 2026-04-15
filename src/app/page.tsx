@@ -4,8 +4,8 @@ import { formatEuro, toNumber } from "@/lib/money";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { BreakEvenCard } from "@/components/dashboard/break-even-card";
 import { RevenueCostChart } from "@/components/dashboard/revenue-cost-chart";
-import { FixedCostsTable } from "@/components/fixed-costs/fixed-costs-table";
-import { FixedCostForm } from "@/components/fixed-costs/fixed-cost-form";
+import { FixedCostsTable } from "@/components/dashboard/fixed-costs-table";
+import { FixedCostForm } from "@/components/dashboard/fixed-cost-form";
 
 async function getMonthlyChartData() {
   const revenueDocs = await db.revenueDocument.findMany({
