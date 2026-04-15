@@ -8,39 +8,6 @@ datasource db {
 }
 
 model RevenueSync {
-  id                 String   @id @default(cuid())
-  syncDate           DateTime @default(now())
-  revenueTodayNet    Float    @default(0)
-  revenueMonthNet    Float    @default(0)
-  newCustomersMonth  Int      @default(0)
-  avgRevenuePerNewCustomer Float @default(0)
-  invoiceCount       Int      @default(0)
-  createdAt          DateTime @default(now())
-}
-
-model SyncedInvoice {
-  id            String   @id @default(cuid())
-  weclappId     String   @unique
-  invoiceNumber String?
-  customerId    String?
-  customerName  String?
-  invoiceDate   DateTime
-  netAmount     Float    @default(0)
-  grossAmount   Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model RevenueSync {
   id                       String   @id @default(cuid())
   syncDate                 DateTime @default(now())
   revenueTodayNet          Float    @default(0)
