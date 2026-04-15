@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FixedCost {
+  id            String   @id @default(cuid())
+  name          String
+  category      String?
+  amountMonthly Decimal  @db.Decimal(12, 2)
+  startDate     DateTime?
+  endDate       DateTime?
+  active        Boolean  @default(true)
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RevenueDocument {
+  id             String   @id @default(cuid())
+  externalId     String   @unique
+  documentNumber String?
+  customerId     String?
+  customerName   String?
+  documentDate   DateTime
+  netAmount      Decimal  @db.Decimal(12, 2)
+  taxAmount      Decimal  @db.Decimal(12, 2)
+  grossAmount    Decimal  @db.Decimal(12, 2)
+  status         String?
+  rawJson        String?
+  importedAt     DateTime @default(now())
+}
+
+model PurchaseDocument {
+  id             String   @id @default(cuid())
+  externalId     String   @unique
+  documentNumber String?
+  supplierName   String?
+  documentDate   DateTime
+  netAmount      Decimal  @db.Decimal(12, 2)
+  taxAmount      Decimal  @db.Decimal(12, 2)
+  grossAmount    Decimal  @db.Decimal(12, 2)
+  status         String?
+  rawJson        String?
+  importedAt     DateTime @default(now())
+}
+
+model CustomerSnapshot {
+  id                 String   @id @default(cuid())
+  externalCustomerId String   @unique
+  customerName       String?
+  firstInvoiceDate   DateTime
+  importedAt         DateTime @default(now())
+}
+
+model SyncRun {
+  id         String   @id @default(cuid())
+  syncType   String
+  status     String
+  message    String?
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+}
