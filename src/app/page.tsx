@@ -11,31 +11,33 @@ import { RevenueSyncButton } from "@/components/dashboard/revenue-sync-button";
 export const dynamic = "force-dynamic";
 
 async function getMonthlyChartData() {
-  const revenueDocs = await db.syncedInvoice.findMany({
-    orderBy: {
-      invoiceDate: "asc",
-    },
-    select: {
-      invoiceDate: true,
-      netAmount: true,
-    },
-  });
+  try {
+    const revenueDocs = await db.syncedInvoice.findMany({
+      orderBy: {
+        invoiceDate: "asc",
+      },
+      select: {
+        invoiceDate: true,
+        netAmount: true,
+      },
+    });
 
-  const map = new Map<string, { label: string; revenue: number; costs: number }>();
+    const map = new Map<string, { label: string; revenue: number; costs: number }>();
 
-  for (const doc of revenueDocs) {
-    const label = `${doc.invoiceDate.getFullYear()}-${String(
-      doc.invoiceDate.getMonth() + 1
-    ).padStart(2, "0")}`;
+    for (const doc of revenueDocs) {
+      const label = `${doc.invoiceDate.getFullYear()}-${String(
+        doc.invoiceDate.getMonth() + 1
+      ).padStart(2, "0")}`;
 
-    const existing = map.get(label) || { label, revenue: 0, costs: 0 };
+      const existing = map.get(label) || { label, revenue: 0, costs: 0 };
+      existing.revenue += toNumber(doc.netAmount);
+      map.set(label, existing);
+    }
 
-    existing.revenue += toNumber(doc.netAmount);
-
-    map.set(label, existing);
+    return Array.from(map.values());
+  } catch {
+    return [];
   }
-
-  return Array.from(map.values());
 }
 
 export default async function HomePage() {
@@ -48,10 +50,10 @@ export default async function HomePage() {
       },
       select: {
         id: true,
-        title: true,
+        name: true,
         category: true,
-        amount: true,
-        isActive: true,
+        amountMonthly: true,
+        active: true,
         note: true,
       },
     }),
@@ -88,31 +90,18 @@ export default async function HomePage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <KpiCard title="Umsatz heute" value={formatEuro(summary.todayRevenue)} />
-
           <KpiCard title="Umsatz Monat" value={formatEuro(summary.monthRevenue)} />
-
           <KpiCard title="Kosten Monat" value={formatEuro(summary.monthTotalCosts)} />
-
           <KpiCard
             title="Gewinn / Verlust Monat"
             value={formatEuro(summary.monthProfit)}
           />
-
-          <KpiCard
-            title="Fixkosten Monat"
-            value={formatEuro(summary.monthFixedCosts)}
-          />
-
+          <KpiCard title="Fixkosten Monat" value={formatEuro(summary.monthFixedCosts)} />
           <KpiCard
             title="Variable Kosten Monat"
             value={formatEuro(summary.monthVariableCosts)}
           />
-
-          <KpiCard
-            title="Neukunden Monat"
-            value={String(summary.monthNewCustomers)}
-          />
-
+          <KpiCard title="Neukunden Monat" value={String(summary.monthNewCustomers)} />
           <KpiCard
             title="Ø Umsatz pro Neukunde"
             value={formatEuro(summary.averageRevenuePerNewCustomer)}
@@ -128,9 +117,7 @@ export default async function HomePage() {
             <BreakEvenCard gap={summary.monthBreakEvenGap} />
 
             <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-              <div className="text-sm font-medium text-gray-500">
-                Steuerübersicht
-              </div>
+              <div className="text-sm font-medium text-gray-500">Steuerübersicht</div>
 
               <div className="mt-3 space-y-2 text-sm text-gray-700">
                 <div className="flex items-center justify-between">
@@ -154,15 +141,10 @@ export default async function HomePage() {
 
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           <FixedCostForm />
-
           <FixedCostsTable
             items={fixedCosts.map((item) => ({
-              id: item.id,
-              name: item.title,
-              category: item.category,
-              note: item.note,
-              active: item.isActive,
-              amountMonthly: Number(item.amount),
+              ...item,
+              amountMonthly: Number(item.amountMonthly),
             }))}
           />
         </div>
