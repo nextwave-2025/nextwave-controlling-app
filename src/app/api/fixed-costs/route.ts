@@ -49,12 +49,13 @@ export async function POST(req: NextRequest) {
 });
 
     return NextResponse.json(
-      {
-        ...item,
-        amountMonthly: Number(item.amountMonthly),
-      },
-      { status: 201 }
-    );
+  {
+    ...item,
+    amountMonthly: Number(item.amount),
+    name: item.title,
+  },
+  { status: 201 }
+);
   } catch (error) {
     console.error("POST /api/fixed-costs failed", error);
     return NextResponse.json({ error: "Fixkosten konnten nicht gespeichert werden." }, { status: 500 });
