@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { fetchWeclappInvoices } from "@/lib/weclapp";
 
 function startOfToday() {
@@ -26,16 +26,14 @@ export async function POST() {
     const customerIdsThisMonth = new Set<string>();
 
     for (const invoice of invoices) {
-      if (!invoice.id || !invoice.invoiceDate) {
-        continue;
-      }
+      if (!invoice.id || !invoice.invoiceDate) continue;
 
       const invoiceDate = new Date(invoice.invoiceDate);
       const netAmount = Number(invoice.netAmount ?? 0);
       const grossAmount = Number(invoice.grossAmount ?? 0);
       const customerId = invoice.customerId ? String(invoice.customerId) : null;
 
-      await prisma.syncedInvoice.upsert({
+      await db.syncedInvoice.upsert({
         where: {
           weclappId: String(invoice.id),
         },
@@ -66,9 +64,7 @@ export async function POST() {
 
       if (invoiceDate >= monthStart) {
         revenueMonthNet += netAmount;
-        if (customerId) {
-          customerIdsThisMonth.add(customerId);
-        }
+        if (customerId) customerIdsThisMonth.add(customerId);
       }
     }
 
@@ -76,7 +72,7 @@ export async function POST() {
     const avgRevenuePerNewCustomer =
       newCustomersMonth > 0 ? revenueMonthNet / newCustomersMonth : 0;
 
-    const sync = await prisma.revenueSync.create({
+    const sync = await db.revenueSync.create({
       data: {
         revenueTodayNet,
         revenueMonthNet,
