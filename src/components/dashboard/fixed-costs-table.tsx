@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { formatEuro } from "@/lib/money";
 
 type FixedCostRow = {
@@ -9,7 +12,74 @@ type FixedCostRow = {
   note: string | null;
 };
 
+type EditingState = {
+  id: string;
+  name: string;
+  category: string;
+  amountMonthly: string;
+  active: boolean;
+  note: string;
+} | null;
+
 export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
+  const [editing, setEditing] = useState<EditingState>(null);
+  const [saving, setSaving] = useState(false);
+
+  function startEdit(item: FixedCostRow) {
+    setEditing({
+      id: item.id,
+      name: item.name,
+      category: item.category || "",
+      amountMonthly: String(item.amountMonthly),
+      active: item.active,
+      note: item.note || "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+
+    try {
+      setSaving(true);
+
+      const res = await fetch("/api/fixed-costs", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: editing.id,
+          name: editing.name,
+          category: editing.category,
+          amountMonthly: Number(editing.amountMonthly),
+          active: editing.active,
+          note: editing.note,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Speichern fehlgeschlagen");
+      }
+
+      alert("Fixkosten erfolgreich aktualisiert");
+      window.location.reload();
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Fehler beim Speichern der Fixkosten"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
       <div className="mb-4 text-lg font-semibold text-gray-900">Fixkosten</div>
@@ -23,18 +93,164 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
               <th className="py-3 pr-4">Monat</th>
               <th className="py-3 pr-4">Status</th>
               <th className="py-3 pr-4">Notiz</th>
+              <th className="py-3 pr-4">Aktion</th>
             </tr>
           </thead>
+
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id} className="border-b border-gray-100 text-gray-800">
-                <td className="py-3 pr-4 font-medium">{item.name}</td>
-                <td className="py-3 pr-4">{item.category || "-"}</td>
-                <td className="py-3 pr-4">{formatEuro(item.amountMonthly)}</td>
-                <td className="py-3 pr-4">{item.active ? "Aktiv" : "Inaktiv"}</td>
-                <td className="py-3 pr-4">{item.note || "-"}</td>
-              </tr>
-            ))}
+            {items.map((item) => {
+              const isEditing = editing?.id === item.id;
+
+              return (
+                <tr
+                  key={item.id}
+                  className="border-b border-gray-100 text-gray-800 align-top"
+                >
+                  <td className="py-3 pr-4 font-medium">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editing.name}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  name: e.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      />
+                    ) : (
+                      item.name
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editing.category}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  category: e.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      />
+                    ) : (
+                      item.category || "-"
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editing.amountMonthly}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  amountMonthly: e.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      />
+                    ) : (
+                      formatEuro(item.amountMonthly)
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <select
+                        value={editing.active ? "true" : "false"}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  active: e.target.value === "true",
+                                }
+                              : prev
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      >
+                        <option value="true">Aktiv</option>
+                        <option value="false">Inaktiv</option>
+                      </select>
+                    ) : item.active ? (
+                      "Aktiv"
+                    ) : (
+                      "Inaktiv"
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <textarea
+                        value={editing.note}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  note: e.target.value,
+                                }
+                              : prev
+                          )
+                        }
+                        className="min-h-[42px] w-full rounded-lg border border-gray-300 px-3 py-2"
+                      />
+                    ) : (
+                      item.note || "-"
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={saveEdit}
+                          disabled={saving}
+                          className="rounded-lg bg-brand-orange px-3 py-2 font-medium text-white disabled:opacity-60"
+                        >
+                          {saving ? "Speichert..." : "Speichern"}
+                        </button>
+
+                        <button
+                          onClick={cancelEdit}
+                          disabled={saving}
+                          className="rounded-lg bg-gray-200 px-3 py-2 font-medium text-gray-800"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => startEdit(item)}
+                        className="rounded-lg bg-gray-900 px-3 py-2 font-medium text-white"
+                      >
+                        Bearbeiten
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
