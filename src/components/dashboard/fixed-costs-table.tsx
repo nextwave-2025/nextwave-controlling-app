@@ -7,6 +7,8 @@ type FixedCostRow = {
   id: string;
   name: string;
   category: string | null;
+  amountPaid?: number;
+  taxMode?: string;
   amountMonthly: number;
   active: boolean;
   note: string | null;
@@ -16,10 +18,55 @@ type EditingState = {
   id: string;
   name: string;
   category: string;
-  amountMonthly: string;
+  amountPaid: string;
+  taxMode: string;
+  amountMonthly: number;
   active: boolean;
   note: string;
 } | null;
+
+const TAX_OPTIONS = [
+  { value: "gross19", label: "19 % Brutto" },
+  { value: "gross7", label: "7 % Brutto" },
+  { value: "exempt", label: "MwSt-frei" },
+  { value: "net", label: "Netto" },
+];
+
+function calculateNetAmount(amountPaid: string, taxMode: string) {
+  const value = Number(amountPaid || 0);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  switch (taxMode) {
+    case "gross19":
+      return value / 1.19;
+    case "gross7":
+      return value / 1.07;
+    case "exempt":
+      return value;
+    case "net":
+      return value;
+    default:
+      return value / 1.19;
+  }
+}
+
+function getTaxLabel(taxMode?: string) {
+  switch (taxMode) {
+    case "gross19":
+      return "19 % Brutto";
+    case "gross7":
+      return "7 % Brutto";
+    case "exempt":
+      return "MwSt-frei";
+    case "net":
+      return "Netto";
+    default:
+      return "19 % Brutto";
+  }
+}
 
 export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
   const [editing, setEditing] = useState<EditingState>(null);
@@ -30,7 +77,9 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
       id: item.id,
       name: item.name,
       category: item.category || "",
-      amountMonthly: String(item.amountMonthly),
+      amountPaid: String(item.amountPaid ?? item.amountMonthly),
+      taxMode: item.taxMode || "gross19",
+      amountMonthly: item.amountMonthly,
       active: item.active,
       note: item.note || "",
     });
@@ -55,7 +104,8 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
           id: editing.id,
           name: editing.name,
           category: editing.category,
-          amountMonthly: Number(editing.amountMonthly),
+          amountPaid: Number(editing.amountPaid),
+          taxMode: editing.taxMode,
           active: editing.active,
           note: editing.note,
         }),
@@ -84,13 +134,21 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
       <div className="mb-4 text-lg font-semibold text-gray-900">Fixkosten</div>
 
+      <div className="mb-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+        Hier wird immer der <strong>abgebuchte Betrag</strong> erfasst. Das
+        System berechnet daraus automatisch den <strong>Netto-Betrag</strong> für
+        dein Controlling.
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
               <th className="py-3 pr-4">Name</th>
               <th className="py-3 pr-4">Kategorie</th>
-              <th className="py-3 pr-4">Monat</th>
+              <th className="py-3 pr-4">Abgebucht</th>
+              <th className="py-3 pr-4">Steuerart</th>
+              <th className="py-3 pr-4">Netto Controlling</th>
               <th className="py-3 pr-4">Status</th>
               <th className="py-3 pr-4">Notiz</th>
               <th className="py-3 pr-4">Aktion</th>
@@ -100,6 +158,9 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
           <tbody>
             {items.map((item) => {
               const isEditing = editing?.id === item.id;
+              const editingNet = isEditing
+                ? calculateNetAmount(editing.amountPaid, editing.taxMode)
+                : 0;
 
               return (
                 <tr
@@ -113,12 +174,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         value={editing.name}
                         onChange={(e) =>
                           setEditing((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  name: e.target.value,
-                                }
-                              : prev
+                            prev ? { ...prev, name: e.target.value } : prev
                           )
                         }
                         className="w-full rounded-lg border border-gray-300 px-3 py-2"
@@ -135,12 +191,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         value={editing.category}
                         onChange={(e) =>
                           setEditing((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  category: e.target.value,
-                                }
-                              : prev
+                            prev ? { ...prev, category: e.target.value } : prev
                           )
                         }
                         className="w-full rounded-lg border border-gray-300 px-3 py-2"
@@ -155,22 +206,45 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                       <input
                         type="number"
                         step="0.01"
-                        value={editing.amountMonthly}
+                        value={editing.amountPaid}
                         onChange={(e) =>
                           setEditing((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  amountMonthly: e.target.value,
-                                }
-                              : prev
+                            prev ? { ...prev, amountPaid: e.target.value } : prev
                           )
                         }
                         className="w-full rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
-                      formatEuro(item.amountMonthly)
+                      formatEuro(item.amountPaid ?? item.amountMonthly)
                     )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing ? (
+                      <select
+                        value={editing.taxMode}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev ? { ...prev, taxMode: e.target.value } : prev
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      >
+                        {TAX_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      getTaxLabel(item.taxMode)
+                    )}
+                  </td>
+
+                  <td className="py-3 pr-4">
+                    {isEditing
+                      ? formatEuro(editingNet)
+                      : formatEuro(item.amountMonthly)}
                   </td>
 
                   <td className="py-3 pr-4">
@@ -205,12 +279,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         value={editing.note}
                         onChange={(e) =>
                           setEditing((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  note: e.target.value,
-                                }
-                              : prev
+                            prev ? { ...prev, note: e.target.value } : prev
                           )
                         }
                         className="min-h-[42px] w-full rounded-lg border border-gray-300 px-3 py-2"
