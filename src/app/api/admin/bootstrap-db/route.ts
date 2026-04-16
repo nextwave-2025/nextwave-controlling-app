@@ -69,6 +69,18 @@ await db.$executeRawUnsafe(`
   ADD COLUMN IF NOT EXISTS "taxMode" TEXT NOT NULL DEFAULT 'gross19';
 `);
 
+    await db.$executeRawUnsafe(`
+  UPDATE "FixedCost"
+  SET "amountPaid" = "amountMonthly"
+  WHERE "amountPaid" = 0;
+`);
+
+await db.$executeRawUnsafe(`
+  UPDATE "FixedCost"
+  SET "taxMode" = 'gross19'
+  WHERE "taxMode" IS NULL OR "taxMode" = '';
+`);
+
     return NextResponse.json({
       ok: true,
       message: "DB bootstrap erfolgreich",
