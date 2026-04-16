@@ -56,6 +56,8 @@ export default async function HomePage() {
         amountMonthly: true,
         active: true,
         note: true,
+        amountPaid: true,
+taxMode: true,
       },
     }),
 
@@ -141,11 +143,13 @@ export default async function HomePage() {
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           <FixedCostForm />
           <FixedCostsTable
-            items={fixedCosts.map((item) => ({
-              ...item,
-              amountMonthly: Number(item.amountMonthly),
-            }))}
-          />
+  items={fixedCosts.map((item) => ({
+    ...item,
+    amountPaid: Number(item.amountPaid ?? 0),
+    amountMonthly: Number(item.amountMonthly),
+    taxMode: item.taxMode || "gross19",
+  }))}
+/>
         </div>
       </div>
     </main>
