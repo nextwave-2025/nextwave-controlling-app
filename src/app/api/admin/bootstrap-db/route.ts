@@ -59,6 +59,16 @@ export async function GET() {
       ON "SyncedPurchaseInvoice"("weclappId");
     `);
 
+    await db.$executeRawUnsafe(`
+  ALTER TABLE "FixedCost"
+  ADD COLUMN IF NOT EXISTS "amountPaid" DOUBLE PRECISION NOT NULL DEFAULT 0;
+`);
+
+await db.$executeRawUnsafe(`
+  ALTER TABLE "FixedCost"
+  ADD COLUMN IF NOT EXISTS "taxMode" TEXT NOT NULL DEFAULT 'gross19';
+`);
+
     return NextResponse.json({
       ok: true,
       message: "DB bootstrap erfolgreich",
