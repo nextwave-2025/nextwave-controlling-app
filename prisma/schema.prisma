@@ -10,6 +10,8 @@ datasource db {
 model FixedCost {
   id            String   @id @default(cuid())
   name          String
+  amountPaid    Float    @default(0)
+  taxMode       String   @default("gross19")
   amountMonthly Float
   category      String?
   note          String?
