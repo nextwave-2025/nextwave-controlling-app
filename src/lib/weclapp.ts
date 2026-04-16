@@ -3,6 +3,8 @@ type WeclappInvoice = {
   invoiceNumber?: string;
   customerId?: string | number;
   customerName?: string;
+  supplierId?: string | number;
+  supplierName?: string;
   invoiceDate?: string;
   netAmount?: number;
   grossAmount?: number;
@@ -28,11 +30,11 @@ function getToken() {
   return token;
 }
 
-export async function fetchWeclappInvoices(): Promise<WeclappInvoice[]> {
+async function fetchList(path: string): Promise<WeclappInvoice[]> {
   const baseUrl = getBaseUrl();
   const token = getToken();
 
-  const url = `${baseUrl}/webapp/api/v1/salesInvoice?page=1&pageSize=1000`;
+  const url = `${baseUrl}${path}`;
 
   const res = await fetch(url, {
     method: "GET",
@@ -50,4 +52,12 @@ export async function fetchWeclappInvoices(): Promise<WeclappInvoice[]> {
 
   const data = (await res.json()) as WeclappListResponse;
   return data.result ?? [];
+}
+
+export async function fetchWeclappInvoices(): Promise<WeclappInvoice[]> {
+  return fetchList("/webapp/api/v1/salesInvoice?page=1&pageSize=1000");
+}
+
+export async function fetchWeclappPurchaseInvoices(): Promise<WeclappInvoice[]> {
+  return fetchList("/webapp/api/v1/purchaseInvoice?page=1&pageSize=1000");
 }
