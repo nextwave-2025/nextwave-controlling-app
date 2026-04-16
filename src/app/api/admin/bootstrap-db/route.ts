@@ -38,6 +38,27 @@ export async function GET() {
       );
     `);
 
+        await db.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SyncedPurchaseInvoice" (
+        "id" TEXT NOT NULL,
+        "weclappId" TEXT NOT NULL,
+        "invoiceNumber" TEXT,
+        "supplierId" TEXT,
+        "supplierName" TEXT,
+        "invoiceDate" TIMESTAMP(3) NOT NULL,
+        "netAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+        "grossAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "SyncedPurchaseInvoice_pkey" PRIMARY KEY ("id")
+      );
+    `);
+
+    await db.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "SyncedPurchaseInvoice_weclappId_key"
+      ON "SyncedPurchaseInvoice"("weclappId");
+    `);
+
     return NextResponse.json({
       ok: true,
       message: "DB bootstrap erfolgreich",
