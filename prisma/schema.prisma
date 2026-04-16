@@ -41,3 +41,16 @@ model SyncedInvoice {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model SyncedPurchaseInvoice {
+  id            String   @id @default(cuid())
+  weclappId     String   @unique
+  invoiceNumber String?
+  supplierId    String?
+  supplierName  String?
+  invoiceDate   DateTime
+  netAmount     Float    @default(0)
+  grossAmount   Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
