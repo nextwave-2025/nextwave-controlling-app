@@ -20,14 +20,6 @@ function getMonthRange(): DateRange {
   return { start, end };
 }
 
-function getQuarterRange(): DateRange {
-  const now = new Date();
-  const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
-  const start = new Date(now.getFullYear(), quarterStartMonth, 1);
-  const end = new Date(now.getFullYear(), quarterStartMonth + 3, 1);
-  return { start, end };
-}
-
 export async function getDashboardSummary() {
   const today = getTodayRange();
   const month = getMonthRange();
@@ -48,12 +40,19 @@ export async function getDashboardSummary() {
 
   let todayRevenue = 0;
   let monthRevenue = 0;
+  let monthVariableCosts = 0;
   let monthNewCustomers = 0;
   let averageRevenuePerNewCustomer = 0;
   let monthOutputVat = 0;
+  let monthInputVat = 0;
 
   try {
-    const [todayInvoices, monthInvoices, latestSync] = await Promise.all([
+    const [
+      todayInvoices,
+      monthInvoices,
+      monthPurchaseInvoices,
+      latestSync,
+    ] = await Promise.all([
       db.syncedInvoice.findMany({
         where: {
           invoiceDate: {
@@ -79,6 +78,18 @@ export async function getDashboardSummary() {
         },
       }),
 
+      db.syncedPurchaseInvoice.findMany({
+        where: {
+          invoiceDate: {
+            gte: month.start,
+            lt: month.end,
+          },
+        },
+        select: {
+          netAmount: true,
+        },
+      }),
+
       db.revenueSync.findFirst({
         orderBy: {
           createdAt: "desc",
@@ -96,6 +107,11 @@ export async function getDashboardSummary() {
       0
     );
 
+    monthVariableCosts = monthPurchaseInvoices.reduce(
+      (sum, item) => sum + toNumber(item.netAmount),
+      0
+    );
+
     const monthCustomerIds = new Set(
       monthInvoices
         .map((item) => item.customerId)
@@ -109,20 +125,26 @@ export async function getDashboardSummary() {
       monthNewCustomers > 0 ? monthRevenue / monthNewCustomers : 0;
 
     monthOutputVat = monthRevenue * 0.19;
+
+    monthInputVat = (monthFixedCosts + monthVariableCosts) * 0.19;
+
   } catch {
     todayRevenue = 0;
     monthRevenue = 0;
+    monthVariableCosts = 0;
     monthNewCustomers = 0;
     averageRevenuePerNewCustomer = 0;
     monthOutputVat = 0;
+    monthInputVat = 0;
   }
 
-  const monthVariableCosts = 0;
   const monthTotalCosts = monthFixedCosts + monthVariableCosts;
+
   const monthProfit = monthRevenue - monthTotalCosts;
-  const monthInputVat = monthFixedCosts * 0.19;
+
   const quarterVatPayable = monthOutputVat * 3 - monthInputVat * 3;
-  const monthBreakEvenGap = Math.max(0, monthFixedCosts - monthRevenue);
+
+  const monthBreakEvenGap = Math.max(0, monthTotalCosts - monthRevenue);
 
   return {
     todayRevenue,
