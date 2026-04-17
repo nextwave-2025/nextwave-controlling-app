@@ -67,12 +67,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const name =
-      typeof body.name === "string" ? body.name.trim() : "";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
     const category =
       typeof body.category === "string" ? body.category.trim() : "";
-    const note =
-      typeof body.note === "string" ? body.note.trim() : "";
+    const note = typeof body.note === "string" ? body.note.trim() : "";
     const amountPaid = Number(body.amountPaid ?? 0);
     const taxMode = normalizeTaxMode(body.taxMode);
 
@@ -136,18 +134,14 @@ export async function PUT(req: Request) {
   try {
     const body = await req.json();
 
-    const id =
-      typeof body.id === "string" ? body.id.trim() : "";
-    const name =
-      typeof body.name === "string" ? body.name.trim() : "";
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+    const name = typeof body.name === "string" ? body.name.trim() : "";
     const category =
       typeof body.category === "string" ? body.category.trim() : "";
-    const note =
-      typeof body.note === "string" ? body.note.trim() : "";
+    const note = typeof body.note === "string" ? body.note.trim() : "";
     const amountPaid = Number(body.amountPaid ?? 0);
     const taxMode = normalizeTaxMode(body.taxMode);
-    const active =
-      typeof body.active === "boolean" ? body.active : true;
+    const active = typeof body.active === "boolean" ? body.active : true;
 
     if (!id) {
       return NextResponse.json(
@@ -212,6 +206,45 @@ export async function PUT(req: Request) {
           error instanceof Error
             ? error.message
             : "Fehler beim Aktualisieren der Fixkosten",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+    const id = typeof body.id === "string" ? body.id.trim() : "";
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "ID fehlt",
+        },
+        { status: 400 }
+      );
+    }
+
+    await db.fixedCost.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      message: "Fixkosten erfolgreich gelöscht",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Fehler beim Löschen der Fixkosten",
       },
       { status: 500 }
     );
