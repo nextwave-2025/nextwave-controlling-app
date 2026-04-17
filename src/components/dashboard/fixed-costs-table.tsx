@@ -177,12 +177,12 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-[1200px] border-collapse text-sm">
+        <table className="min-w-[1120px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
               <th className="sticky left-0 z-20 bg-white py-3 pr-4">Name</th>
-              <th className="bg-white py-3 pr-4">Kategorie</th>
               <th className="bg-white py-3 pr-4">Abgebucht</th>
+              <th className="bg-white py-3 pr-4">Kategorie</th>
               <th className="bg-white py-3 pr-4">Steuerart</th>
               <th className="bg-white py-3 pr-4">Netto Controlling</th>
               <th className="bg-white py-3 pr-4">Status</th>
@@ -215,27 +215,10 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, name: e.target.value } : prev
                           )
                         }
-                        className="w-[180px] rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[170px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       item.name
-                    )}
-                  </td>
-
-                  <td className="bg-white py-3 pr-4">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editing.category}
-                        onChange={(e) =>
-                          setEditing((prev) =>
-                            prev ? { ...prev, category: e.target.value } : prev
-                          )
-                        }
-                        className="w-[150px] rounded-lg border border-gray-300 px-3 py-2"
-                      />
-                    ) : (
-                      item.category || "-"
                     )}
                   </td>
 
@@ -250,10 +233,27 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, amountPaid: e.target.value } : prev
                           )
                         }
-                        className="w-[130px] rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[120px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       formatEuro(item.amountPaid ?? item.amountMonthly)
+                    )}
+                  </td>
+
+                  <td className="bg-white py-3 pr-4">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editing.category}
+                        onChange={(e) =>
+                          setEditing((prev) =>
+                            prev ? { ...prev, category: e.target.value } : prev
+                          )
+                        }
+                        className="w-[130px] rounded-lg border border-gray-300 px-3 py-2"
+                      />
+                    ) : (
+                      item.category || "-"
                     )}
                   </td>
 
@@ -266,7 +266,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, taxMode: e.target.value } : prev
                           )
                         }
-                        className="w-[150px] rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[130px] rounded-lg border border-gray-300 px-3 py-2"
                       >
                         {TAX_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -299,7 +299,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                               : prev
                           )
                         }
-                        className="w-[110px] rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[95px] rounded-lg border border-gray-300 px-3 py-2"
                       >
                         <option value="true">Aktiv</option>
                         <option value="false">Inaktiv</option>
@@ -320,7 +320,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, note: e.target.value } : prev
                           )
                         }
-                        className="min-h-[42px] w-[180px] rounded-lg border border-gray-300 px-3 py-2"
+                        className="min-h-[42px] w-[140px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       item.note || "-"
@@ -333,7 +333,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         <button
                           onClick={saveEdit}
                           disabled={saving}
-                          className="rounded-lg bg-brand-orange px-3 py-2 font-medium text-white disabled:opacity-60"
+                          className="rounded-lg bg-brand-orange px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                         >
                           {saving ? "Speichert..." : "Speichern"}
                         </button>
@@ -341,7 +341,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         <button
                           onClick={cancelEdit}
                           disabled={saving}
-                          className="rounded-lg bg-gray-200 px-3 py-2 font-medium text-gray-800"
+                          className="rounded-lg bg-gray-200 px-3 py-1.5 text-xs font-medium text-gray-800"
                         >
                           Abbrechen
                         </button>
@@ -350,7 +350,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                       <div className="flex flex-col gap-2">
                         <button
                           onClick={() => startEdit(item)}
-                          className="rounded-lg bg-gray-900 px-3 py-2 font-medium text-white"
+                          className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white"
                         >
                           Bearbeiten
                         </button>
@@ -358,7 +358,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         <button
                           onClick={() => deleteItem(item.id, item.name)}
                           disabled={deletingId === item.id}
-                          className="rounded-lg bg-red-600 px-3 py-2 font-medium text-white disabled:opacity-60"
+                          className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                         >
                           {deletingId === item.id ? "Löscht..." : "Löschen"}
                         </button>
