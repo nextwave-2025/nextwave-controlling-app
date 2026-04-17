@@ -20,7 +20,6 @@ type EditingState = {
   category: string;
   amountPaid: string;
   taxMode: string;
-  amountMonthly: number;
   active: boolean;
   note: string;
 } | null;
@@ -71,6 +70,7 @@ function getTaxLabel(taxMode?: string) {
 export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
   const [editing, setEditing] = useState<EditingState>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function startEdit(item: FixedCostRow) {
     setEditing({
@@ -79,7 +79,6 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
       category: item.category || "",
       amountPaid: String(item.amountPaid ?? item.amountMonthly),
       taxMode: item.taxMode || "gross19",
-      amountMonthly: item.amountMonthly,
       active: item.active,
       note: item.note || "",
     });
@@ -130,6 +129,43 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
     }
   }
 
+  async function deleteItem(id: string, name: string) {
+    const confirmed = window.confirm(
+      `Möchtest du die Fixkosten "${name}" wirklich löschen?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(id);
+
+      const res = await fetch("/api/fixed-costs", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Löschen fehlgeschlagen");
+      }
+
+      alert("Fixkosten erfolgreich gelöscht");
+      window.location.reload();
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Fehler beim Löschen der Fixkosten"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
       <div className="mb-4 text-lg font-semibold text-gray-900">Fixkosten</div>
@@ -141,17 +177,19 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse text-sm">
+        <table className="min-w-[1200px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
-              <th className="py-3 pr-4">Name</th>
-              <th className="py-3 pr-4">Kategorie</th>
-              <th className="py-3 pr-4">Abgebucht</th>
-              <th className="py-3 pr-4">Steuerart</th>
-              <th className="py-3 pr-4">Netto Controlling</th>
-              <th className="py-3 pr-4">Status</th>
-              <th className="py-3 pr-4">Notiz</th>
-              <th className="py-3 pr-4">Aktion</th>
+              <th className="sticky left-0 z-20 bg-white py-3 pr-4">Name</th>
+              <th className="bg-white py-3 pr-4">Kategorie</th>
+              <th className="bg-white py-3 pr-4">Abgebucht</th>
+              <th className="bg-white py-3 pr-4">Steuerart</th>
+              <th className="bg-white py-3 pr-4">Netto Controlling</th>
+              <th className="bg-white py-3 pr-4">Status</th>
+              <th className="bg-white py-3 pr-4">Notiz</th>
+              <th className="sticky right-0 z-20 bg-white py-3 pl-4 pr-0">
+                Aktion
+              </th>
             </tr>
           </thead>
 
@@ -167,7 +205,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                   key={item.id}
                   className="border-b border-gray-100 text-gray-800 align-top"
                 >
-                  <td className="py-3 pr-4 font-medium">
+                  <td className="sticky left-0 z-10 bg-white py-3 pr-4 font-medium">
                     {isEditing ? (
                       <input
                         type="text"
@@ -177,14 +215,14 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, name: e.target.value } : prev
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[180px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       item.name
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing ? (
                       <input
                         type="text"
@@ -194,14 +232,14 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, category: e.target.value } : prev
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[150px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       item.category || "-"
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing ? (
                       <input
                         type="number"
@@ -212,14 +250,14 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, amountPaid: e.target.value } : prev
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[130px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       formatEuro(item.amountPaid ?? item.amountMonthly)
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing ? (
                       <select
                         value={editing.taxMode}
@@ -228,7 +266,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, taxMode: e.target.value } : prev
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[150px] rounded-lg border border-gray-300 px-3 py-2"
                       >
                         {TAX_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
@@ -241,13 +279,13 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing
                       ? formatEuro(editingNet)
                       : formatEuro(item.amountMonthly)}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing ? (
                       <select
                         value={editing.active ? "true" : "false"}
@@ -261,7 +299,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                               : prev
                           )
                         }
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="w-[110px] rounded-lg border border-gray-300 px-3 py-2"
                       >
                         <option value="true">Aktiv</option>
                         <option value="false">Inaktiv</option>
@@ -273,7 +311,7 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="bg-white py-3 pr-4">
                     {isEditing ? (
                       <textarea
                         value={editing.note}
@@ -282,16 +320,16 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                             prev ? { ...prev, note: e.target.value } : prev
                           )
                         }
-                        className="min-h-[42px] w-full rounded-lg border border-gray-300 px-3 py-2"
+                        className="min-h-[42px] w-[180px] rounded-lg border border-gray-300 px-3 py-2"
                       />
                     ) : (
                       item.note || "-"
                     )}
                   </td>
 
-                  <td className="py-3 pr-4">
+                  <td className="sticky right-0 z-10 bg-white py-3 pl-4 pr-0">
                     {isEditing ? (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-col gap-2">
                         <button
                           onClick={saveEdit}
                           disabled={saving}
@@ -309,12 +347,22 @@ export function FixedCostsTable({ items }: { items: FixedCostRow[] }) {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => startEdit(item)}
-                        className="rounded-lg bg-gray-900 px-3 py-2 font-medium text-white"
-                      >
-                        Bearbeiten
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => startEdit(item)}
+                          className="rounded-lg bg-gray-900 px-3 py-2 font-medium text-white"
+                        >
+                          Bearbeiten
+                        </button>
+
+                        <button
+                          onClick={() => deleteItem(item.id, item.name)}
+                          disabled={deletingId === item.id}
+                          className="rounded-lg bg-red-600 px-3 py-2 font-medium text-white disabled:opacity-60"
+                        >
+                          {deletingId === item.id ? "Löscht..." : "Löschen"}
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
