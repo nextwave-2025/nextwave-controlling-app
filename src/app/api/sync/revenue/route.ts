@@ -12,6 +12,47 @@ function startOfMonth() {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
+function normalizeInvoiceType(invoice: Record<string, unknown>) {
+  const raw =
+    invoice.invoiceType ??
+    invoice.type ??
+    invoice.documentType ??
+    invoice.kind ??
+    invoice.category ??
+    null;
+
+  const value = String(raw ?? "").trim().toLowerCase();
+
+  if (
+    value.includes("proforma") ||
+    value.includes("pro forma") ||
+    value.includes("proforma-rechnung")
+  ) {
+    return "PROFORMA";
+  }
+
+  if (
+    value.includes("abschluss") ||
+    value.includes("final")
+  ) {
+    return "FINAL";
+  }
+
+  if (
+    value.includes("standard") ||
+    value.includes("rechnung") ||
+    value.includes("invoice")
+  ) {
+    return "STANDARD";
+  }
+
+  return null;
+}
+
+function isAllowedRevenueInvoice(invoiceType: string | null) {
+  return invoiceType === "STANDARD" || invoiceType === "FINAL";
+}
+
 export async function POST() {
   try {
     const invoices = await fetchWeclappInvoices();
@@ -25,10 +66,18 @@ export async function POST() {
 
     const customerIdsThisMonth = new Set<string>();
 
-    for (const invoice of invoices) {
+    for (const rawInvoice of invoices) {
+      const invoice = rawInvoice as Record<string, unknown>;
+
       if (!invoice.id || !invoice.invoiceDate) continue;
 
-      const invoiceDate = new Date(invoice.invoiceDate);
+      const invoiceType = normalizeInvoiceType(invoice);
+
+      if (!isAllowedRevenueInvoice(invoiceType)) {
+        continue;
+      }
+
+      const invoiceDate = new Date(String(invoice.invoiceDate));
       const netAmount = Number(invoice.netAmount ?? 0);
       const grossAmount = Number(invoice.grossAmount ?? 0);
       const customerId = invoice.customerId ? String(invoice.customerId) : null;
@@ -38,19 +87,21 @@ export async function POST() {
           weclappId: String(invoice.id),
         },
         update: {
-          invoiceNumber: invoice.invoiceNumber ?? null,
+          invoiceNumber: (invoice.invoiceNumber as string) ?? null,
           customerId,
-          customerName: invoice.customerName ?? null,
+          customerName: (invoice.customerName as string) ?? null,
           invoiceDate,
+          invoiceType,
           netAmount,
           grossAmount,
         },
         create: {
           weclappId: String(invoice.id),
-          invoiceNumber: invoice.invoiceNumber ?? null,
+          invoiceNumber: (invoice.invoiceNumber as string) ?? null,
           customerId,
-          customerName: invoice.customerName ?? null,
+          customerName: (invoice.customerName as string) ?? null,
           invoiceDate,
+          invoiceType,
           netAmount,
           grossAmount,
         },
