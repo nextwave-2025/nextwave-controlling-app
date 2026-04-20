@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     });
 
     if (!error) {
-      return NextResponse.redirect(`${SITE_URL}/dashboard`);
+      return NextResponse.redirect(`${SITE_URL}/`);
     }
   }
 
