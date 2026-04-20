@@ -110,6 +110,7 @@ function isVatDeductible(invoice: Record<string, unknown>, currency: string, tax
 export async function POST() {
   try {
     const invoices = await fetchWeclappPurchaseInvoices();
+    console.log("Purchase invoice sample:", invoices[0]);
     const monthStart = startOfMonth();
 
     let costsMonthNet = 0;
