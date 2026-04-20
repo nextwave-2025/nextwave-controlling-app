@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { getDashboardSummary } from "@/lib/kpis";
 import { formatEuro, toNumber } from "@/lib/money";
@@ -8,6 +10,7 @@ import { FixedCostsTable } from "@/components/dashboard/fixed-costs-table";
 import { FixedCostForm } from "@/components/dashboard/fixed-cost-form";
 import { RevenueSyncButton } from "@/components/dashboard/revenue-sync-button";
 import { CostSyncButton } from "@/components/dashboard/cost-sync-button";
+import LogoutButton from "@/components/logout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +26,10 @@ async function getMonthlyChartData() {
       },
     });
 
-    const map = new Map<string, { label: string; revenue: number; costs: number }>();
+    const map = new Map<
+      string,
+      { label: string; revenue: number; costs: number }
+    >();
 
     for (const doc of revenueDocs) {
       const label = `${doc.invoiceDate.getFullYear()}-${String(
@@ -42,6 +48,16 @@ async function getMonthlyChartData() {
 }
 
 export default async function HomePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const [summary, fixedCosts, chartData] = await Promise.all([
     getDashboardSummary(),
 
@@ -57,7 +73,7 @@ export default async function HomePage() {
         active: true,
         note: true,
         amountPaid: true,
-taxMode: true,
+        taxMode: true,
       },
     }),
 
@@ -67,7 +83,7 @@ taxMode: true,
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-orange">
               NEXTWAVE
@@ -82,10 +98,16 @@ taxMode: true,
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <RevenueSyncButton />
+          <div className="flex flex-col items-start gap-3 md:items-end">
+            <div className="text-sm text-gray-600">
+              Eingeloggt als: <span className="font-medium text-gray-900">{user.email}</span>
+            </div>
 
-<CostSyncButton />
+            <div className="flex flex-wrap gap-3">
+              <RevenueSyncButton />
+              <CostSyncButton />
+              <LogoutButton />
+            </div>
           </div>
         </div>
 
@@ -143,13 +165,13 @@ taxMode: true,
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           <FixedCostForm />
           <FixedCostsTable
-  items={fixedCosts.map((item) => ({
-    ...item,
-    amountPaid: Number(item.amountPaid ?? 0),
-    amountMonthly: Number(item.amountMonthly),
-    taxMode: item.taxMode || "gross19",
-  }))}
-/>
+            items={fixedCosts.map((item) => ({
+              ...item,
+              amountPaid: Number(item.amountPaid ?? 0),
+              amountMonthly: Number(item.amountMonthly),
+              taxMode: item.taxMode || "gross19",
+            }))}
+          />
         </div>
       </div>
     </main>
