@@ -56,6 +56,7 @@ function isAllowedRevenueInvoice(invoiceType: string | null) {
 export async function POST() {
   try {
     const invoices = await fetchWeclappInvoices();
+    console.log("Revenue invoice sample:", invoices[0]);
 
     const todayStart = startOfToday();
     const monthStart = startOfMonth();
