@@ -38,6 +38,7 @@ model SyncedInvoice {
   customerId    String?
   customerName  String?
   invoiceDate   DateTime
+  invoiceType   String?
   netAmount     Float    @default(0)
   grossAmount   Float    @default(0)
   createdAt     DateTime @default(now())
@@ -45,14 +46,19 @@ model SyncedInvoice {
 }
 
 model SyncedPurchaseInvoice {
-  id            String   @id @default(cuid())
-  weclappId     String   @unique
-  invoiceNumber String?
-  supplierId    String?
-  supplierName  String?
-  invoiceDate   DateTime
-  netAmount     Float    @default(0)
-  grossAmount   Float    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  weclappId       String   @unique
+  invoiceNumber   String?
+  supplierId      String?
+  supplierName    String?
+  invoiceDate     DateTime
+  currency        String?
+  netAmount       Float    @default(0)
+  grossAmount     Float    @default(0)
+  taxAmount       Float    @default(0)
+  taxRate         Float?
+  taxMode         String?
+  isVatDeductible Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
