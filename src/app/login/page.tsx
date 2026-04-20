@@ -4,8 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const ALLOWED_EMAILS = [
-  "mustafa@deinedomain.de",
-  "jonas@deinedomain.de",
+  "mustafa@next-wave.tech",
 ];
 
 export default function LoginPage() {
