@@ -8,6 +8,37 @@ type WeclappInvoice = {
   invoiceDate?: string;
   netAmount?: number;
   grossAmount?: number;
+
+  // Für Verkaufsrechnungen / Proforma-Filter
+  invoiceType?: string;
+  type?: string;
+  documentType?: string;
+  kind?: string;
+  category?: string;
+
+  // Für Einkaufsrechnungen / Steuerlogik
+  currency?: string;
+  currencyCode?: string;
+  documentCurrency?: string;
+
+  taxAmount?: number;
+  vatAmount?: number;
+  inputTaxAmount?: number;
+
+  taxRate?: number;
+  vatRate?: number;
+
+  taxMode?: string;
+  vatType?: string;
+  taxType?: string;
+  taxCategory?: string;
+
+  isVatDeductible?: boolean;
+  inputTaxDeductible?: boolean;
+  vatDeductible?: boolean;
+
+  // Sicherheitsnetz: unbekannte zusätzliche Weclapp-Felder
+  [key: string]: unknown;
 };
 
 type WeclappListResponse = {
