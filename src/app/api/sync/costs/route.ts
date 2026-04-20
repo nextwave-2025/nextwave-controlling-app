@@ -7,6 +7,13 @@ function startOfMonth() {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
+function parseInvoiceDate(value: unknown) {
+  if (!value) return null;
+
+  const date = new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function detectCurrency(invoice: Record<string, unknown>) {
   return String(
     invoice.currency ??
@@ -54,6 +61,7 @@ function detectTaxMode(invoice: Record<string, unknown>) {
 
   if (value.includes("19")) return "gross19";
   if (value.includes("7")) return "gross7";
+
   if (
     value.includes("frei") ||
     value.includes("exempt") ||
@@ -61,23 +69,24 @@ function detectTaxMode(invoice: Record<string, unknown>) {
   ) {
     return "exempt";
   }
-  if (
-    value.includes("reverse") ||
-    value.includes("charge")
-  ) {
+
+  if (value.includes("reverse") || value.includes("charge")) {
     return "reverse_charge";
   }
-  if (
-    value.includes("netto") ||
-    value === "net"
-  ) {
+
+  if (value.includes("netto") || value === "net") {
     return "net";
   }
 
   return null;
 }
 
-function isVatDeductible(invoice: Record<string, unknown>, currency: string, taxAmount: number, taxMode: string | null) {
+function isVatDeductible(
+  invoice: Record<string, unknown>,
+  currency: string,
+  taxAmount: number,
+  taxMode: string | null
+) {
   const rawFlag =
     invoice.isVatDeductible ??
     invoice.inputTaxDeductible ??
@@ -110,18 +119,29 @@ function isVatDeductible(invoice: Record<string, unknown>, currency: string, tax
 export async function POST() {
   try {
     const invoices = await fetchWeclappPurchaseInvoices();
-    console.log("Purchase invoice sample:", invoices[0]);
     const monthStart = startOfMonth();
 
     let costsMonthNet = 0;
     let invoiceCount = 0;
+    let skippedInvalidDateCount = 0;
 
     for (const rawInvoice of invoices) {
       const invoice = rawInvoice as Record<string, unknown>;
 
-      if (!invoice.id || !invoice.invoiceDate) continue;
+      if (!invoice.id) continue;
 
-      const invoiceDate = new Date(String(invoice.invoiceDate));
+      const invoiceDate = parseInvoiceDate(invoice.invoiceDate);
+
+      if (!invoiceDate) {
+        skippedInvalidDateCount++;
+        console.warn("Purchase invoice skipped بسبب invalid invoiceDate:", {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber ?? null,
+          rawInvoiceDate: invoice.invoiceDate ?? null,
+        });
+        continue;
+      }
+
       const netAmount = Number(invoice.netAmount ?? 0);
       const grossAmount = Number(invoice.grossAmount ?? 0);
       const supplierId = invoice.supplierId ? String(invoice.supplierId) : null;
@@ -181,6 +201,7 @@ export async function POST() {
       ok: true,
       costsMonthNet,
       invoiceCount,
+      skippedInvalidDateCount,
     });
   } catch (error) {
     console.error("Costs sync failed:", error);
