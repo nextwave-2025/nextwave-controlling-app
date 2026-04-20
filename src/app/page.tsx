@@ -14,6 +14,10 @@ import LogoutButton from "@/components/logout-button";
 
 export const dynamic = "force-dynamic";
 
+function formatPercent(value: number) {
+  return `${value.toFixed(1).replace(".", ",")} %`;
+}
+
 async function getMonthlyChartData() {
   try {
     const revenueDocs = await db.syncedInvoice.findMany({
@@ -26,10 +30,7 @@ async function getMonthlyChartData() {
       },
     });
 
-    const map = new Map<
-      string,
-      { label: string; revenue: number; costs: number }
-    >();
+    const map = new Map<string, { label: string; revenue: number; costs: number }>();
 
     for (const doc of revenueDocs) {
       const label = `${doc.invoiceDate.getFullYear()}-${String(
@@ -94,13 +95,14 @@ export default async function HomePage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-gray-600">
-              Täglicher Blick auf Umsatz, Kosten, Gewinn, Neukunden und Break-even.
+              Täglicher Blick auf Umsatz, Kosten, Gewinn, Neukunden, Marge und Steuer.
             </p>
           </div>
 
           <div className="flex flex-col items-start gap-3 md:items-end">
             <div className="text-sm text-gray-600">
-              Eingeloggt als: <span className="font-medium text-gray-900">{user.email}</span>
+              Eingeloggt als:{" "}
+              <span className="font-medium text-gray-900">{user.email}</span>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -112,22 +114,52 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <KpiCard title="Umsatz heute" value={formatEuro(summary.todayRevenue)} />
           <KpiCard title="Umsatz Monat" value={formatEuro(summary.monthRevenue)} />
-          <KpiCard title="Kosten Monat" value={formatEuro(summary.monthTotalCosts)} />
           <KpiCard
             title="Gewinn / Verlust Monat"
             value={formatEuro(summary.monthProfit)}
           />
-          <KpiCard title="Fixkosten Monat" value={formatEuro(summary.monthFixedCosts)} />
+          <KpiCard
+            title="Deckungsbeitrag Monat"
+            value={formatEuro(summary.monthContributionMargin)}
+          />
+          <KpiCard
+            title="Deckungsbeitragsmarge"
+            value={formatPercent(summary.monthContributionMarginPercent)}
+          />
+
           <KpiCard
             title="Variable Kosten Monat"
             value={formatEuro(summary.monthVariableCosts)}
           />
-          <KpiCard title="Neukunden Monat" value={String(summary.monthNewCustomers)} />
+          <KpiCard
+            title="Fixkosten Monat"
+            value={formatEuro(summary.monthFixedCosts)}
+          />
+          <KpiCard
+            title="Handelsspanne"
+            value={formatPercent(summary.monthGrossMarginPercent)}
+          />
+          <KpiCard
+            title="Neukunden Monat"
+            value={String(summary.monthNewCustomers)}
+          />
+
+          <KpiCard
+            title="Fixkostenquote"
+            value={formatPercent(summary.monthFixedCostRatio)}
+          />
+          <KpiCard
+            title="Gesamtkostenquote"
+            value={formatPercent(summary.monthTotalCostRatio)}
+          />
           <KpiCard
             title="Ø Umsatz pro Neukunde"
             value={formatEuro(summary.averageRevenuePerNewCustomer)}
+          />
+          <KpiCard
+            title="Umsatz heute"
+            value={formatEuro(summary.todayRevenue)}
           />
         </div>
 
@@ -159,11 +191,76 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
+
+            <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+              <div className="text-sm font-medium text-gray-500">
+                Zahllast letzte Quartale
+              </div>
+
+              <div className="mt-3 space-y-3">
+                {summary.quarterVatHistory.length > 0 ? (
+                  summary.quarterVatHistory.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm last:border-b-0 last:pb-0"
+                    >
+                      <span className="text-gray-700">{item.label}</span>
+                      <strong className="text-gray-900">
+                        {formatEuro(item.payable)}
+                      </strong>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500">
+                    Keine Quartalsdaten vorhanden.
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+            <div className="text-sm font-medium text-gray-500">
+              Gewinn / Verlust letzte Monate
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {summary.monthlyProfitHistory.length > 0 ? (
+                summary.monthlyProfitHistory.map((item) => (
+                  <div
+                    key={item.label}
+                    className="grid grid-cols-[1fr_auto] gap-3 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <div>
+                      <div className="text-sm font-medium text-gray-800">
+                        {item.label}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        Umsatz {formatEuro(item.revenue)} · Variable Kosten{" "}
+                        {formatEuro(item.variableCosts)} · Fixkosten{" "}
+                        {formatEuro(item.fixedCosts)}
+                      </div>
+                    </div>
+
+                    <div className="text-sm font-semibold text-gray-900">
+                      {formatEuro(item.profit)}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500">
+                  Keine Monatsdaten vorhanden.
+                </div>
+              )}
+            </div>
+          </div>
+
           <FixedCostForm />
+        </div>
+
+        <div className="mt-4">
           <FixedCostsTable
             items={fixedCosts.map((item) => ({
               ...item,
